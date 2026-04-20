@@ -1,0 +1,108 @@
+{
+  "categories": [
+    {
+      "id": "1",
+      "name": "Electronics"
+    },
+    {
+      "id": "2",
+      "name": "Clothing"
+    },
+    {
+      "id": "3",
+      "name": "Food & Beverages"
+    },
+    {
+      "id": "4",
+      "name": "Stationery"
+    },
+    {
+      "id": "5",
+      "name": "Furniture"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "name": "Tshirt",
+      "categoryId": 2,
+      "price": 850,
+      "stockQuantity": 25,
+      "unit": "pcs"
+    },
+    {
+      "id": "2",
+      "name": "denim shirt",
+      "categoryId": 2,
+      "price": 2400,
+      "stockQuantity": 15,
+      "unit": "pcs"
+    },
+    {
+      "id": "3",
+      "name": "Cotton Polo T-Shirt",
+      "categoryId": 2,
+      "price": 599,
+      "stockQuantity": 50,
+      "unit": "pcs"
+    },
+    {
+      "id": "4",
+      "name": "Denim Jeans",
+      "categoryId": 2,
+      "price": 1299,
+      "stockQuantity": 30,
+      "unit": "pcs"
+    },
+    {
+      "id": "5",
+      "name": "Green Tea (25 Bags)",
+      "categoryId": 3,
+      "price": 250,
+      "stockQuantity": 100,
+      "unit": "box"
+    },
+    {
+      "id": "6",
+      "name": "Shorts",
+      "categoryId": 3,
+      "price": 80,
+      "stockQuantity": 200,
+      "unit": "pcs"
+    },
+    {
+      "id": "7",
+      "name": "linen pant",
+      "categoryId": 2,
+      "price": 120,
+      "stockQuantity": 75,
+      "unit": "pcs"
+    },
+    {
+      "id": "8",
+      "name": "Executive Table",
+      "categoryId": 5,
+      "price": 8500,
+      "stockQuantity": 5,
+      "unit": "pcs"
+    }
+  ],
+  "parties": [
+    {
+      "name": "sinan",
+      "phone": "4236322442",
+      "type": "customer",
+      "balance": 1000,
+      "id": "X18nIovYdME"
+    }
+  ],
+  "transactions": [],
+  "payments": [],
+  "settings": [
+    {
+      "id": "1",
+      "businessName": ""
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
