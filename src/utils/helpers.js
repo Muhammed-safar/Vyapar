@@ -58,8 +58,17 @@ export const calculateTotalPurchases = (transactions) => {
 };
 
 export const generateInvoiceNumber = (type, id) => {
-  const prefix = type === 'SALE' ? 'INV' : 'PUR';
-  return `${prefix}-${String(id).padStart(4, '0')}`;
+  const prefixMap = {
+    'SALE': 'INV',
+    'PURCHASE': 'PUR',
+    'SALE_RETURN': 'RET',
+
+    'RETURN': 'RET'
+  };
+  const prefix = prefixMap[type] || 'TX';
+  // If id is long string (e.g. from nanoid), take last 4, else pad it
+  const displayId = String(id).length > 6 ? String(id).slice(-4).toUpperCase() : String(id).padStart(4, '0');
+  return `${prefix}-${displayId}`;
 };
 
 export const getStatusColor = (balance, type) => {

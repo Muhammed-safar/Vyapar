@@ -81,7 +81,7 @@ export default function PartiesPage() {
             <HiUserGroup size={24} className="text-success-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Receivable (Customers)</p>
+            <p className="text-sm text-gray-500">To Collect (From Customers)</p>
             <p className="text-xl font-bold text-success-600">{formatCurrency(totalBalanceCustomers)}</p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function PartiesPage() {
             <HiUserGroup size={24} className="text-danger-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Payable (Suppliers)</p>
+            <p className="text-sm text-gray-500">To Pay (To Suppliers)</p>
             <p className="text-xl font-bold text-danger-600">{formatCurrency(totalBalanceSuppliers)}</p>
           </div>
         </div>
@@ -181,8 +181,8 @@ export default function PartiesPage() {
                         party.balance > 0 ? 'text-success-600' : party.balance < 0 ? 'text-danger-600' : 'text-gray-400'
                       }`}>
                         {formatCurrency(Math.abs(party.balance))}
-                        {party.balance > 0 && <span className="text-xs ml-1">receivable</span>}
-                        {party.balance < 0 && <span className="text-xs ml-1">payable</span>}
+                        {party.balance > 0 && <span className="text-xs ml-1">to collect</span>}
+                        {party.balance < 0 && <span className="text-xs ml-1">to pay</span>}
                       </span>
                     </td>
                     <td className="table-cell text-right">

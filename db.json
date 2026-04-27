@@ -27,7 +27,7 @@
       "name": "Tshirt",
       "categoryId": 2,
       "price": 850,
-      "stockQuantity": 25,
+      "stockQuantity": 23,
       "unit": "pcs"
     },
     {
@@ -35,7 +35,7 @@
       "name": "denim shirt",
       "categoryId": 2,
       "price": 2400,
-      "stockQuantity": 15,
+      "stockQuantity": 10,
       "unit": "pcs"
     },
     {
@@ -43,7 +43,7 @@
       "name": "Cotton Polo T-Shirt",
       "categoryId": 2,
       "price": 599,
-      "stockQuantity": 50,
+      "stockQuantity": 49,
       "unit": "pcs"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Denim Jeans",
       "categoryId": 2,
       "price": 1299,
-      "stockQuantity": 30,
+      "stockQuantity": 23,
       "unit": "pcs"
     },
     {
@@ -83,19 +83,43 @@
       "name": "Executive Table",
       "categoryId": 5,
       "price": 8500,
-      "stockQuantity": 5,
+      "stockQuantity": 6,
+      "unit": "pcs"
+    },
+    {
+      "id": "9",
+      "name": "Bluetooth Headphones",
+      "categoryId": 1,
+      "price": 1500,
+      "stockQuantity": 15,
+      "unit": "pcs"
+    },
+    {
+      "id": "10",
+      "name": "Wireless Mouse",
+      "categoryId": 1,
+      "price": 450,
+      "stockQuantity": 40,
+      "unit": "pcs"
+    },
+    {
+      "id": "11",
+      "name": "Notebook (A4)",
+      "categoryId": 4,
+      "price": 60,
+      "stockQuantity": 150,
+      "unit": "pcs"
+    },
+    {
+      "id": "12",
+      "name": "Office Chair",
+      "categoryId": 5,
+      "price": 4200,
+      "stockQuantity": 10,
       "unit": "pcs"
     }
   ],
-  "parties": [
-    {
-      "name": "sinan",
-      "phone": "4236322442",
-      "type": "customer",
-      "balance": 1000,
-      "id": "X18nIovYdME"
-    }
-  ],
+  "parties": [],
   "transactions": [],
   "payments": [],
   "settings": [

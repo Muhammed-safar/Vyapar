@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store/AppContext';
 import { PAYMENT_TYPES } from '../utils/constants';
 import { roundTo2 } from '../utils/helpers';
@@ -6,13 +6,15 @@ import { HiPlus, HiTrash, HiSearch, HiUserAdd, HiCheck, HiX } from 'react-icons/
 import { motion, AnimatePresence } from 'framer-motion';
 import { createParty } from '../services/api';
 
-export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
+export default function TransactionForm({ type = 'SALE', initialData, onSubmit, onClose }) {
   const { parties, products, loadAllData } = useApp();
 
   const filteredParties = useMemo(() => {
-    return parties.filter(p =>
-      type === 'SALE' ? p.type === 'customer' : p.type === 'supplier'
-    );
+    return parties.filter(p => {
+      if (type === 'SALE' || type === 'SALE_RETURN') return p.type === 'customer';
+      if (type === 'PURCHASE' || type === 'PURCHASE_RETURN') return p.type === 'supplier';
+      return true;
+    });
   }, [parties, type]);
 
   const [form, setForm] = useState({
@@ -26,12 +28,85 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
     notes: '',
   });
 
+  const isNewSaleReturn = type === 'SALE_RETURN' && initialData && !initialData.type?.includes('RETURN');
+  const isNewPurchaseReturn = type === 'PURCHASE_RETURN' && initialData && !initialData.type?.includes('RETURN');
+  const isNewReturn = isNewSaleReturn || isNewPurchaseReturn;
+
+  useEffect(() => {
+    if (initialData) {
+      // Check if this is an "edit" of an existing transaction or a "new" one based on initialData (like a return from sale)
+
+      setForm({
+        partyId: initialData.partyId,
+        date: isNewReturn ? new Date().toISOString().split('T')[0] : initialData.date,
+        items: initialData.items.map(item => {
+          const product = products.find(p => p.id === item.productId);
+          return {
+            ...item,
+            productName: product?.name || 'Unknown',
+            maxStock: (product?.stockQuantity || 0) + ((type === 'SALE' || (type === 'PURCHASE_RETURN' && !isNewReturn)) ? item.quantity : 0),
+            unit: product?.unit || '',
+          };
+        }),
+        paidAmount: isNewReturn ? '' : initialData.paidAmount,
+        paymentType: initialData.paymentType,
+        discount: initialData.discount,
+        tax: initialData.tax,
+        notes: initialData.notes || (isNewReturn ? `Return from Sale Invoice` : ''),
+      });
+    }
+  }, [initialData, products, type]);
+
   const [searchProduct, setSearchProduct] = useState('');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
-  const [showAddParty, setShowAddParty] = useState(false);
-  const [newParty, setNewParty] = useState({ name: '', phone: '' });
-  const [addingParty, setAddingParty] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const [partyName, setPartyName] = useState('');
+  const [partyPhone, setPartyPhone] = useState('');
+  const [showPartyDropdown, setShowPartyDropdown] = useState(false);
+
+  useEffect(() => {
+    if (initialData && parties.length > 0) {
+      const p = parties.find(x => x.id === initialData.partyId);
+      if (p) {
+        setForm(f => ({ ...f, partyId: p.id }));
+        setPartyName(p.name);
+        setPartyPhone(p.phone || '');
+      }
+    }
+  }, [initialData, parties]);
+
+  const filteredPartyOptions = useMemo(() => {
+    if (!partyName || form.partyId) return [];
+    const searchLower = partyName.toLowerCase();
+    return filteredParties.filter(p => 
+      (p.phone && p.phone.toLowerCase().includes(searchLower)) ||
+      (p.name && p.name.toLowerCase().includes(searchLower))
+    );
+  }, [filteredParties, partyName, form.partyId]);
+
+  const handleNameChange = (e) => {
+    setPartyName(e.target.value);
+    setShowPartyDropdown(true);
+    if (form.partyId) {
+      setForm(f => ({ ...f, partyId: '' }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    setPartyPhone(e.target.value);
+    if (form.partyId) {
+      setForm(f => ({ ...f, partyId: '' }));
+    }
+  };
+
+  const selectParty = (party) => {
+    setForm({ ...form, partyId: party.id });
+    setPartyName(party.name);
+    setPartyPhone(party.phone || '');
+    setShowPartyDropdown(false);
+    setErrors({ ...errors, party: null });
+  };
 
   const filteredProducts = useMemo(() => {
     if (!searchProduct) return products;
@@ -73,7 +148,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
 
     if (field === 'quantity') {
       const qty = Number(value);
-      if (type === 'SALE' && qty > item.maxStock) {
+      if ((type === 'SALE' || type === 'PURCHASE_RETURN') && qty > item.maxStock) {
         setErrors({ ...errors, [`item_${index}`]: `Max stock: ${item.maxStock}` });
         return;
       }
@@ -91,29 +166,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
     setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
   };
 
-  const handleQuickAddParty = async () => {
-    if (!newParty.name) {
-      setErrors({ ...errors, newParty: 'Name is required' });
-      return;
-    }
-    setAddingParty(true);
-    try {
-      const res = await createParty({
-        ...newParty,
-        type: type === 'SALE' ? 'customer' : 'supplier',
-        balance: 0,
-      });
-      await loadAllData();
-      setForm({ ...form, partyId: res.data.id });
-      setShowAddParty(false);
-      setNewParty({ name: '', phone: '' });
-      setErrors({ ...errors, newParty: null });
-    } catch (err) {
-      setErrors({ ...errors, newParty: 'Failed to add party' });
-    } finally {
-      setAddingParty(false);
-    }
-  };
+  // Quick party add logic removed. Merged into handleSubmit.
 
   const subtotal = useMemo(() => {
     return roundTo2(form.items.reduce((sum, item) => sum + item.total, 0));
@@ -124,8 +177,9 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
   }, [subtotal, form.discount, form.tax]);
 
   const totalAmount = useMemo(() => {
-    return roundTo2(subtotal - (Number(form.discount) || 0) + taxAmount);
-  }, [subtotal, form.discount, taxAmount]);
+    const rawTotal = subtotal - (Number(form.discount) || 0) + taxAmount;
+    return form.paymentType === 'upi' ? roundTo2(rawTotal) : Math.ceil(rawTotal);
+  }, [subtotal, form.discount, taxAmount, form.paymentType]);
 
   const balance = useMemo(() => {
     return roundTo2(totalAmount - (Number(form.paidAmount) || 0));
@@ -133,20 +187,41 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
 
   const validate = () => {
     const errs = {};
-    if (!form.partyId) errs.party = `Select or add a ${type === 'SALE' ? 'customer' : 'supplier'}`;
+    if (!partyName.trim()) errs.party = `${partyLabel} name is required`;
     if (form.items.length === 0) errs.items = 'Add at least one product';
     if (form.paidAmount && Number(form.paidAmount) < 0) errs.payment = 'Invalid payment amount';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
+    let finalPartyId = form.partyId;
+    let newPartyData = null;
+
+    if (!finalPartyId) {
+      try {
+        const res = await createParty({
+          name: partyName,
+          phone: partyPhone,
+          type: type === 'SALE' || type === 'SALE_RETURN' ? 'customer' : 'supplier',
+          balance: 0,
+        });
+        finalPartyId = res.data.id;
+        newPartyData = res.data;
+        await loadAllData();
+      } catch (err) {
+        setErrors({ ...errors, party: 'Failed to create new party' });
+        return;
+      }
+    }
+
     const transactionData = {
       type,
-      partyId: Number(form.partyId),
+      partyId: finalPartyId,
+      newPartyData,
       date: form.date,
       totalAmount,
       paidAmount: Number(form.paidAmount) || 0,
@@ -161,94 +236,89 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
         total: i.total,
       })),
       paymentType: form.paymentType,
+      originalSaleId: isNewSaleReturn ? initialData.id : (initialData?.originalSaleId || null),
+      originalPurchaseId: isNewPurchaseReturn ? initialData.id : (initialData?.originalPurchaseId || null),
     };
 
     onSubmit(transactionData);
   };
 
   const isSale = type === 'SALE';
+  const isPurchase = type === 'PURCHASE';
+
+  const partyLabel = (type === 'SALE' || type === 'SALE_RETURN') ? 'Customer' : 'Supplier';
+  const submitLabel = type === 'SALE_RETURN' ? 'Save & Return Stock' : 
+                      type === 'PURCHASE_RETURN' ? 'Save & Return to Supplier' :
+                      isPurchase ? 'Confirm Purchase Bill' : 
+                      'Save & Generate Invoice';
+  const submitColor = (type === 'SALE' || type === 'SALE_RETURN') ? 'from-rose-500 to-red-600 shadow-red-500/30' : 'from-blue-500 to-blue-700 shadow-blue-500/30';
+  const paidAmountLabel = type === 'SALE_RETURN' ? 'Refunded Amt (₹)' : 
+                          type === 'PURCHASE_RETURN' ? 'Refund Amt (₹)' :
+                          isPurchase ? 'Paid Amt (₹)' : 'Received Amt (₹)';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Party Selection & Quick Add */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {isSale ? 'Customer' : 'Supplier'} *
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowAddParty(!showAddParty)}
-              className="text-xs text-primary-500 hover:text-primary-700 font-semibold flex items-center gap-1"
-            >
-              {showAddParty ? <HiX size={14} /> : <HiPlus size={14} />}
-              {showAddParty ? 'Cancel' : 'Add New'}
-            </button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="relative md:col-span-1">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+            {partyLabel} Name *
+          </label>
+          <div className="flex items-center">
+            <HiSearch className="absolute left-3 text-gray-400" size={18} />
+            <input
+              type="text"
+              value={partyName}
+              onChange={handleNameChange}
+              onFocus={() => setShowPartyDropdown(true)}
+              onBlur={() => setTimeout(() => setShowPartyDropdown(false), 200)}
+              placeholder={`Search or enter name...`}
+              className="input-field pl-10"
+            />
           </div>
 
-          <AnimatePresence mode="wait">
-            {showAddParty ? (
+          <AnimatePresence>
+            {showPartyDropdown && filteredPartyOptions.length > 0 && !form.partyId && (
               <motion.div
-                key="add-party"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-primary-200 dark:border-primary-800"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-30 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto"
               >
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Name *"
-                    className="input-field py-1.5 text-xs flex-1"
-                    value={newParty.name}
-                    onChange={(e) => setNewParty({ ...newParty, name: e.target.value })}
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone"
-                    className="input-field py-1.5 text-xs flex-1"
-                    value={newParty.phone}
-                    onChange={(e) => setNewParty({ ...newParty, phone: e.target.value })}
-                  />
+                {filteredPartyOptions.map(p => (
                   <button
+                    key={p.id}
                     type="button"
-                    onClick={handleQuickAddParty}
-                    disabled={addingParty}
-                    className="p-1.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
+                    onClick={() => selectParty(p)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
                   >
-                    {addingParty ? (
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <HiCheck size={18} />
-                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{p.name}</p>
+                      {p.phone && <p className="text-xs text-gray-400">{p.phone}</p>}
+                    </div>
+                    <HiPlus size={16} className="text-primary-500" />
                   </button>
-                </div>
-                {errors.newParty && <p className="text-danger-500 text-[10px]">{errors.newParty}</p>}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="select-party"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <select
-                  value={form.partyId}
-                  onChange={(e) => setForm({ ...form, partyId: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="">Select {isSale ? 'Customer' : 'Supplier'}</option>
-                  {filteredParties.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.phone})</option>
-                  ))}
-                </select>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>
           {errors.party && <p className="text-danger-500 text-xs mt-1">{errors.party}</p>}
         </div>
 
-        <div>
+        <div className="md:col-span-1">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            value={partyPhone}
+            onChange={handlePhoneChange}
+            placeholder="Enter phone..."
+            className="input-field"
+          />
+        </div>
+
+        <div className="md:col-span-1">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date *</label>
           <input
             type="date"
@@ -273,13 +343,14 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
                 setShowProductDropdown(true);
               }}
               onFocus={() => setShowProductDropdown(true)}
+              onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
               className="input-field pl-10"
               placeholder="Search products..."
             />
           </div>
 
           <AnimatePresence>
-            {showProductDropdown && searchProduct && (
+            {showProductDropdown && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -397,6 +468,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
                 className="input-field py-1.5"
                 placeholder="0"
                 min="0"
+                step="any"
               />
             </div>
             <div>
@@ -409,6 +481,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
                 placeholder="0"
                 min="0"
                 max="100"
+                step="any"
               />
             </div>
           </div>
@@ -441,7 +514,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Received Amt (₹)</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{paidAmountLabel}</label>
               <input
                 type="number"
                 value={form.paidAmount}
@@ -449,6 +522,7 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
                 className="input-field py-2 text-center font-bold"
                 placeholder="0"
                 min="0"
+                step="any"
               />
               {errors.payment && <p className="text-danger-500 text-[10px] mt-1">{errors.payment}</p>}
             </div>
@@ -482,13 +556,9 @@ export default function TransactionForm({ type = 'SALE', onSubmit, onClose }) {
         <button type="button" onClick={onClose} className="btn-outline flex-1 py-3">Discard</button>
         <button
           type="submit"
-          className={`flex-2 font-bold py-3 px-8 rounded-xl text-white shadow-lg transition-all duration-200 active:scale-[0.98] ${
-            isSale
-              ? 'bg-gradient-to-r from-rose-500 to-red-600 shadow-red-500/30'
-              : 'bg-gradient-to-r from-blue-500 to-blue-700 shadow-blue-500/30'
-          }`}
+          className={`flex-2 font-bold py-3 px-8 rounded-xl text-white shadow-lg transition-all duration-200 active:scale-[0.98] bg-gradient-to-r ${submitColor}`}
         >
-          {isSale ? 'Save & Generate Invoice' : 'Confirm Purchase Bill'}
+          {submitLabel}
         </button>
       </div>
     </form>

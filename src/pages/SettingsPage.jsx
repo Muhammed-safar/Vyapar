@@ -1,14 +1,26 @@
+import { useState, useEffect } from 'react';
 import { updateSettings } from '../services/api';
+import { useApp } from '../store/AppContext';
+import { motion } from 'framer-motion';
+import { HiOfficeBuilding, HiMoon, HiSun, HiUser } from 'react-icons/hi';
 
 export default function SettingsPage() {
-  const { businessName, dispatch, darkMode, user } = useApp();
+  const { businessName, dispatch, darkMode, user, settings } = useApp();
   const [name, setName] = useState(businessName || '');
+  const [address, setAddress] = useState(settings?.address || '');
+  const [gstin, setGstin] = useState(settings?.gstin || '');
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setName(businessName || '');
+    setAddress(settings?.address || '');
+    setGstin(settings?.gstin || '');
+  }, [businessName, settings]);
 
   const handleSave = async () => {
     dispatch({ type: 'SET_BUSINESS_NAME', payload: name });
     try {
-      await updateSettings({ businessName: name });
+      await updateSettings({ businessName: name, address, gstin });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -33,9 +45,17 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Business Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-field" placeholder="Enter your business name" />
           </div>
-          <div className="flex items-center gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Business Address</label>
+            <textarea value={address} onChange={(e) => setAddress(e.target.value)} className="input-field min-h-[80px]" placeholder="Enter your business address" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GSTIN / Tax ID</label>
+            <input type="text" value={gstin} onChange={(e) => setGstin(e.target.value)} className="input-field" placeholder="Enter Tax ID" />
+          </div>
+          <div className="flex items-center gap-3 pt-2">
             <button onClick={handleSave} className="btn-primary">Save Changes</button>
-            {saved && <span className="text-success-500 text-sm animate-fade-in">✓ Saved!</span>}
+            {saved && <span className="text-success-500 text-sm font-medium animate-fade-in">✓ Saved!</span>}
           </div>
         </div>
       </motion.div>

@@ -11,19 +11,23 @@ import {
 
 const AppContext = createContext();
 
+const storedUser = JSON.parse(localStorage.getItem('vyapar_user') || 'null');
+const storedDarkMode = localStorage.getItem('vyapar_darkMode') === 'true';
+
 const initialState = {
-  isAuthenticated: false,
-  user: null,
+  isAuthenticated: !!storedUser,
+  user: storedUser,
   businessName: '',
   categories: [],
   products: [],
   parties: [],
   transactions: [],
   payments: [],
-  loading: true,
+  loading: !!storedUser,
   error: null,
   sidebarCollapsed: false,
-  darkMode: false,
+  darkMode: storedDarkMode,
+  settings: {},
 };
 
 function appReducer(state, action) {
@@ -50,8 +54,11 @@ function appReducer(state, action) {
       return { ...state, payments: action.payload };
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
-    case 'TOGGLE_DARK_MODE':
-      return { ...state, darkMode: !state.darkMode };
+    case 'TOGGLE_DARK_MODE': {
+      const newDarkMode = !state.darkMode;
+      localStorage.setItem('vyapar_darkMode', newDarkMode);
+      return { ...state, darkMode: newDarkMode };
+    }
     case 'SET_ALL_DATA':
       return {
         ...state,
@@ -61,6 +68,7 @@ function appReducer(state, action) {
         transactions: action.payload.transactions,
         payments: action.payload.payments,
         businessName: action.payload.settings?.businessName || '',
+        settings: action.payload.settings || {},
         loading: false,
       };
     default:
@@ -114,13 +122,16 @@ export function AppProvider({ children }) {
   }, [state.darkMode]);
 
   const login = (phone) => {
+    const user = { phone };
+    localStorage.setItem('vyapar_user', JSON.stringify(user));
     dispatch({
       type: 'SET_AUTH',
-      payload: { isAuthenticated: true, user: { phone } },
+      payload: { isAuthenticated: true, user },
     });
   };
 
   const logout = () => {
+    localStorage.removeItem('vyapar_user');
     dispatch({ type: 'LOGOUT' });
   };
 

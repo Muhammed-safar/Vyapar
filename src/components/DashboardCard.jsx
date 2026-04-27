@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function DashboardCard({ title, amount, subtitle, icon, trend, color = 'blue', delay = 0 }) {
+export default function DashboardCard({ title, amount, subtitle, icon, trend, color = 'blue', delay = 0, onClick }) {
   const colorClasses = {
     green: {
       bg: 'bg-success-50',
@@ -29,7 +29,8 @@ export default function DashboardCard({ title, amount, subtitle, icon, trend, co
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay * 0.1, duration: 0.4 }}
-      className={`card hover:shadow-lg transition-all duration-300 border ${c.border}`}
+      onClick={onClick}
+      className={`card hover:shadow-lg transition-all duration-300 border ${c.border} ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div>

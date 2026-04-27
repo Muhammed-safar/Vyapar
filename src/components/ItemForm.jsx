@@ -39,7 +39,7 @@ export default function ItemForm({ item, categories, onSubmit, onClose }) {
     if (!validate()) return;
     onSubmit({
       ...form,
-      categoryId: Number(form.categoryId),
+      categoryId: form.categoryId,
       price: Number(form.price),
       stockQuantity: Number(form.stockQuantity),
     });

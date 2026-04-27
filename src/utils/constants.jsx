@@ -23,12 +23,12 @@ export const MENU_ITEMS = [
   },
   {
     id: 'purchase',
-    label: 'Purchase & Expense',
+    label: 'Purchase',
     icon: HiTruck,
     path: '/purchase',
     children: [
       { id: 'purchase-bills', label: 'Purchase Bills', path: '/purchase' },
-      { id: 'expenses', label: 'Expenses', path: '/purchase/expenses' },
+      { id: 'purchase-returns', label: 'Purchase Returns', path: '/purchase/returns' },
     ],
   },
   { id: 'settings', label: 'Settings', icon: HiCog, path: '/settings' },
@@ -36,9 +36,7 @@ export const MENU_ITEMS = [
 
 export const PAYMENT_TYPES = [
   { value: 'cash', label: 'Cash' },
-  { value: 'bank', label: 'Bank Transfer' },
   { value: 'upi', label: 'UPI' },
-  { value: 'cheque', label: 'Cheque' },
   { value: 'credit', label: 'Credit' },
 ];
 
